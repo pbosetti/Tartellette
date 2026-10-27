@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:Tartellette}",
+      "name": "Debug Tartellette",
+      "target": "Tartellette",
+      "configuration": "debug",
+      "preLaunchTask": "swift: Build Debug Tartellette"
+    },
+    {
+      "type": "swift",
+      "request": "launch",
+      "args": [],
+      "cwd": "${workspaceFolder:Tartellette}",
+      "name": "Release Tartellette",
+      "target": "Tartellette",
+      "configuration": "release",
+      "preLaunchTask": "swift: Build Release Tartellette"
+    }
+  ]
+}

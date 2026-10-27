@@ -4,9 +4,13 @@ A minimal macOS menu bar front-end for [Tart](https://tart.run) virtual machines
 
 ## Features
 
-The menu lists every VM reported by `tart list` (green = running, orange = suspended, grey = stopped).
-The **Hide Remote (OCI) Images** toggle shows only local VMs, and the setting is remembered.
-Each VM has a submenu with:
+The menu lists the local VMs reported by `tart list` (green = running, orange = suspended, grey = stopped).
+OCI images from tart's cache are in a separate **OCI Images** section, because they can't be run directly. Each image has:
+
+- **Clone**: creates a local VM from the image with `tart clone`. The VM is named after the image, e.g. `ghcr.io/cirruslabs/macos-golden-gate-xcode:latest` → `golden-gate-xcode`. If that name is taken, `-2`, `-3` and so on is added.
+- **Delete…**: removes the image from tart's cache after confirmation. VMs already cloned from it are not affected.
+
+Each local VM has a submenu with:
 
 - **Start / Resume / Stop / Suspend**: Start (stopped VMs) and Resume (suspended VMs) run `tart run` detached and log to `~/Library/Logs/Tartellette/<vm>.log`.
   Stop is offered for running and suspended VMs. On a suspended VM it discards the saved state, so it asks for confirmation first.
@@ -49,6 +53,7 @@ For development, `swift run` also works.
 | `Actions/HardwareActions.swift` | The Settings submenu. |
 | `Actions/SharedFolderActions.swift` | The Shared Folders submenu. It shows how to build nested, data-driven menus with the `.submenu` kind. |
 | `Actions/VMAction.swift` | Action descriptor and `AppContext`. A descriptor has a kind (`command` or `toggle`), a visibility predicate, and an optional `isDone` predicate. With `isDone` set, the VM shows a spinner until the predicate holds. |
+| `Actions/ImageActions.swift` | Actions for OCI images (Clone, Delete). |
 | `Actions/VMActions.swift` | The per-VM action registry. Append a `VMAction` to a group to add a menu entry. |
 | `UI/MenuBuilder.swift` | Generates the menu from the VM list and the action registry. |
 | `UI/Dialogs.swift`, `UI/Terminal.swift` | Alerts, prompts, and terminal launching. |

@@ -7,6 +7,7 @@ final class Settings {
 
   init() {
     migrate_gui_flags()
+    defaults.removeObject(forKey: "hideRemote")  // setting removed: OCI images now have their own section
   }
 
   // MARK: - Per-VM configuration
@@ -51,12 +52,6 @@ final class Settings {
   }
 
   // MARK: - Global
-
-  /// Hide VMs whose source is an OCI registry.
-  var hide_remote: Bool {
-    get { defaults.bool(forKey: "hideRemote") }
-    set { defaults.set(newValue, forKey: "hideRemote") }
-  }
 
   /// Guest account used when opening a shell. Tart's stock images use "admin".
   var ssh_user: String { defaults.string(forKey: "sshUser") ?? "admin" }

@@ -77,6 +77,10 @@ final class TartClient {
   func set(_ name: String, _ options: [String]) async throws {
     _ = try await run(["set", name] + options)
   }
+  /// Creates a local VM from an OCI image or another local VM (copy-on-write, so it's quick).
+  func clone(_ source: String, to new_name: String) async throws {
+    _ = try await run(["clone", source, new_name])
+  }
   func rename(_ name: String, to new_name: String) async throws {
     _ = try await run(["rename", name, new_name])
   }

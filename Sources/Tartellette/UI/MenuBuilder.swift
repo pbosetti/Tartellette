@@ -30,40 +30,41 @@ final class MenuBuilder {
       item.isEnabled = false
       menu.addItem(item)
     } else {
-      let shown = ctx.settings.hide_remote ? vms.filter(\.is_local) : vms
-      if shown.isEmpty {
-        let title = vms.isEmpty ? "No virtual machines" : "No local virtual machines"
-        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+      let local = vms.filter(\.is_local)
+      let images = vms.filter { !$0.is_local }
+      if local.isEmpty {
+        let item = NSMenuItem(title: "No virtual machines", action: nil, keyEquivalent: "")
         item.isEnabled = false
         menu.addItem(item)
       }
-      for vm in shown { menu.addItem(vm_item(vm)) }
-    }
+      for vm in local { menu.addItem(vm_item(vm, actions: VMActions.groups)) }
 
-    menu.addItem(.separator())
-    let ctx = self.ctx
-    let hide = item("Hide Remote (OCI) Images") {
-      ctx.settings.hide_remote.toggle()
-      ctx.redraw()
+      // OCI images cannot be run directly, only cloned into a local VM.
+      if !images.isEmpty {
+        menu.addItem(.separator())
+        let header = NSMenuItem(title: "OCI Images", action: nil, keyEquivalent: "")
+        header.isEnabled = false
+        menu.addItem(header)
+        for image in images { menu.addItem(vm_item(image, actions: ImageActions.groups)) }
+      }
     }
-    hide.state = ctx.settings.hide_remote ? .on : .off
-    menu.addItem(hide)
 
     menu.addItem(.separator())
     menu.addItem(item("Quit Tartellette", key: "q") { NSApp.terminate(nil) })
   }
 
-  private func vm_item(_ vm: VM) -> NSMenuItem {
-    let item = NSMenuItem(title: vm.name, action: nil, keyEquivalent: "")
+  private func vm_item(_ vm: VM, actions: [[VMAction]]) -> NSMenuItem {
+    let title = vm.is_local ? vm.name : short_image_name(vm.name)
+    let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
     if let busy = ctx.busy[vm.name] {
       spin(item)
       item.toolTip = "\(busy.action)…"
     } else {
-      item.image = status_dot(for: vm)
-      item.toolTip = vm.state
+      item.image = vm.is_local ? status_dot(for: vm) : NSImage(systemSymbolName: "shippingbox", accessibilityDescription: "OCI image")
+      item.toolTip = vm.is_local ? vm.state : vm.name
     }
 
-    item.submenu = submenu(VMActions.groups, vm: vm)
+    item.submenu = submenu(actions, vm: vm)
     return item
   }
 
@@ -138,6 +139,14 @@ final class MenuBuilder {
     let it = NSMenuItem(title: title, action: #selector(Handler.fire), keyEquivalent: key)
     it.target = h
     return it
+  }
+
+  /// OCI names are long registry paths: keep the last component, and shorten a digest to its
+  /// last 7 hex digits (`img@sha256:…d9b61b9` -> `img:d9b61b9`). The full name is in the tooltip.
+  private func short_image_name(_ name: String) -> String {
+    let last = String(name.split(separator: "/").last ?? Substring(name))
+    guard let at = last.range(of: "@sha256:") else { return last }
+    return last[..<at.lowerBound] + ":" + last[at.upperBound...].suffix(7)
   }
 
   private func status_dot(for vm: VM) -> NSImage? {

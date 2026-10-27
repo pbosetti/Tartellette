@@ -6,7 +6,7 @@ enum VMActions {
     [start, resume, stop, suspend],
     [gui_toggle, suspendable_toggle, HardwareActions.menu, SharedFolderActions.menu],
     [copy_ip, copy_ssh, open_shell, info],
-    [rename, delete],
+    [rename, delete, clone],
   ]
 
   static let start = VMAction(
@@ -176,6 +176,27 @@ enum VMActions {
     ctx.perform {
       try await ctx.tart.delete(vm.name)
       ctx.settings.remove_settings(for: vm.name)
+    }
+  }
+
+  /// Clones a stopped VM. The name defaults to `<vm>-<n>` with the first free n, and the clone
+  /// inherits Tartellette's settings for the original (GUI, suspend, shared folders).
+  static let clone = VMAction(
+    title: "Clone…",
+    isEnabled: { vm, _ in vm.state == "stopped" },
+    toolTip: "Only stopped VMs can be cloned",
+    isDone: { _ in false }  // spinner until the clone finishes; cleared by `end`
+  ) { vm, ctx in
+    ctx.perform(on: vm.name) {
+      defer { ctx.end(vm.name) }
+      let taken = Set(try await ctx.tart.list().map(\.name))
+      let suggested = (1...).lazy.map { "\(vm.name)-\($0)" }.first { !taken.contains($0) }!
+      guard let new_name = Dialogs.prompt(title: "Clone “\(vm.name)”", message: "Name of the new VM:", initial: suggested),
+        !new_name.isEmpty
+      else { return }
+      guard !taken.contains(new_name) else { return Dialogs.error("A VM named “\(new_name)” already exists.") }
+      try await ctx.tart.clone(vm.name, to: new_name)
+      ctx.settings.copy_settings(from: vm.name, to: new_name)
     }
   }
 }

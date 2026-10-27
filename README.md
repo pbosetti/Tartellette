@@ -31,7 +31,9 @@ Each local VM has a submenu with:
   That's the app registered to open executable files, e.g. iTerm2 after "Make iTerm2 Default Term". Without one, it falls back to Terminal.
   The user defaults to `admin`; change it with `defaults write com.tartellette.app sshUser <name>`.
 - **Info…**: shows the output of `tart get`.
-- **Rename… / Delete…**: only shown when the VM is not running. Rename is only offered for local VMs, and Delete asks for confirmation first.
+- **Rename… / Delete…**: only shown when the VM is not running. Delete asks for confirmation first.
+- **Clone…**: enabled only while the VM is stopped. It copies the VM with `tart clone`, suggesting `<vm>-1` (or the next free number) as the name.
+  The clone also gets Tartellette's settings for the original (GUI, Allow Suspend, shared folders).
 
 ## Build
 

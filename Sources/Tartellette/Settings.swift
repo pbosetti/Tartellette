@@ -31,6 +31,13 @@ final class Settings {
     configs = all
   }
 
+  func copy_settings(from source: String, to new: String) {
+    guard let c = configs[source] else { return }
+    var all = configs
+    all[new] = c
+    configs = all
+  }
+
   func remove_settings(for vm: String) {
     var all = configs
     if all.removeValue(forKey: vm) != nil { configs = all }

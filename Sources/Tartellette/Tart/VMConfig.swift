@@ -29,10 +29,14 @@ struct SharedDir: Codable, Equatable {
 /// Per-VM options used when starting it. Add new `tart run` options here.
 struct VMConfig: Codable, Equatable {
   var gui = true
+  /// Boot with `--suspendable` (no audio/entropy devices). A VM cold-booted without it can be
+  /// suspended, but its snapshot then fails to restore (VZErrorDomain Code=12), because tart
+  /// always restores with the suspendable device set.
+  var suspendable = true
   var dirs: [SharedDir] = []
 
   var run_arguments: [String] {
-    (gui ? [] : ["--no-graphics"]) + dirs.map { "--dir=\($0.argument)" }
+    (gui ? [] : ["--no-graphics"]) + (suspendable ? ["--suspendable"] : []) + dirs.map { "--dir=\($0.argument)" }
   }
 
   init() {}
@@ -41,6 +45,7 @@ struct VMConfig: Codable, Equatable {
   init(from decoder: Decoder) throws {
     let c = try decoder.container(keyedBy: CodingKeys.self)
     gui = try c.decodeIfPresent(Bool.self, forKey: .gui) ?? true
+    suspendable = try c.decodeIfPresent(Bool.self, forKey: .suspendable) ?? true
     dirs = try c.decodeIfPresent([SharedDir].self, forKey: .dirs) ?? []
   }
 }

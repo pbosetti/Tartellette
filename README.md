@@ -8,13 +8,23 @@ The menu lists every VM reported by `tart list` (green = running, orange = suspe
 The **Hide Remote (OCI) Images** toggle shows only local VMs, and the setting is remembered.
 Each VM has a submenu with:
 
-- **Start / Stop / Suspend**: Start runs `tart run` detached and logs to `~/Library/Logs/Tartellette/<vm>.log`.
+- **Start / Resume / Stop / Suspend**: Start (stopped VMs) and Resume (suspended VMs) run `tart run` detached and log to `~/Library/Logs/Tartellette/<vm>.log`.
+  Stop is offered for running and suspended VMs. On a suspended VM it discards the saved state, so it asks for confirmation first.
 - **Show GUI on Start**: a per-VM toggle. When off, the VM starts with `--no-graphics`.
+- **Allow Suspend (No Audio)**: on by default, and can only be changed while the VM is stopped. Starts the VM with `--suspendable`, which disables audio.
+  Only a VM started this way can be suspended: a VM booted without the flag can still be suspended, but its snapshot never restores.
+  If a resume fails anyway, Tartellette offers to discard the saved state and boot normally.
+- **Settings** (local VMs, only while stopped): display, CPU cores, and memory, applied with `tart set`.
+  - Display: standard sizes from 1024×768 to 1920×1080, or Free, which turns on `--display-refit`.
+  - CPU cores: from 2 to the number of host cores minus one.
+  - Memory: from 4 GB to half of the host's RAM.
+  Current values are read from the VM's `config.json`, because `tart get` doesn't report display refit.
 - **Shared Folders**: the host folders passed to `tart run --dir`. You can add, remove, make read-only, and set the guest name or mount tag.
   Editing is only possible while the VM is stopped, because changing shares on a suspended VM would break its snapshot.
   A missing folder is marked with ⚠, and Start refuses to run until it is restored or removed.
 - **Copy IP Address**: copies the output of `tart ip` to the clipboard.
-- **Open Shell in Terminal**: opens an `ssh <user>@<ip>` session in the default handler for `.command` files.
+- **Open Shell in Terminal**: opens an `ssh <user>@<ip>` session in your default terminal.
+  That's the app registered to open executable files, e.g. iTerm2 after "Make iTerm2 Default Term". Without one, it falls back to Terminal.
   The user defaults to `admin`; change it with `defaults write com.tartellette.app sshUser <name>`.
 - **Info…**: shows the output of `tart get`.
 - **Rename… / Delete…**: only shown when the VM is not running. Rename is only offered for local VMs, and Delete asks for confirmation first.
@@ -35,6 +45,8 @@ For development, `swift run` also works.
 | `Tart/TartClient.swift` | Wraps the `tart` CLI. Add new subcommands (create, clone, pull, login…) here. |
 | `Tart/VM.swift` | Model decoded from `tart list --format json`. |
 | `Tart/VMConfig.swift` | Per-VM run options (GUI, shared folders) and how they map to `tart run` arguments. Add new run options here. |
+| `Tart/VMHardware.swift` | Reads display, CPU and memory from a VM's `config.json`, and lists the choices offered for each. |
+| `Actions/HardwareActions.swift` | The Settings submenu. |
 | `Actions/SharedFolderActions.swift` | The Shared Folders submenu. It shows how to build nested, data-driven menus with the `.submenu` kind. |
 | `Actions/VMAction.swift` | Action descriptor and `AppContext`. A descriptor has a kind (`command` or `toggle`), a visibility predicate, and an optional `isDone` predicate. With `isDone` set, the VM shows a spinner until the predicate holds. |
 | `Actions/VMActions.swift` | The per-VM action registry. Append a `VMAction` to a group to add a menu entry. |

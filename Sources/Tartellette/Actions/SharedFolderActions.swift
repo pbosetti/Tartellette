@@ -10,7 +10,7 @@ enum SharedFolderActions {
       let dirs = ctx.settings.config(for: vm.name).dirs
       return [dirs.indices.map { folder($0, dirs[$0]) }, [add]]
     }),
-    isEnabled: { $0.state == "stopped" }
+    isEnabled: { vm, _ in vm.state == "stopped" }
   ) { _, _ in }
 
   static let add = VMAction(title: "Add Folder…") { vm, ctx in
@@ -72,7 +72,7 @@ enum SharedFolderActions {
   }
 
   private static func reveal(_ dir: SharedDir) -> VMAction {
-    VMAction(title: "Reveal in Finder", isEnabled: { _ in dir.exists }) { _, _ in
+    VMAction(title: "Reveal in Finder", isEnabled: { _, _ in dir.exists }) { _, _ in
       NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: dir.path)])
     }
   }

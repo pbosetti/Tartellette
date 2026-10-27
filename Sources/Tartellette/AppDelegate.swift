@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private var vms: [VM] = []
   private var error: String?
   private var refreshing = false
+  private var menu_open = false
 
   func applicationDidFinishLaunching(_ notification: Notification) {
     if let button = status_item.button {
@@ -37,19 +38,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     rebuild()
     refresh()
 
-    // Poll every 5 s, or every second while an action is in progress.
-    var ticks = 0
+    // Poll only while the menu is open or an action is in progress: any tart command that runs
+    // while a VM boots or restores (even one started from a terminal) can make it fail.
     timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
       MainActor.assumeIsolated {
-        ticks += 1
-        guard let self, ticks % 5 == 0 || !(self.ctx?.busy.isEmpty ?? true) else { return }
+        guard let self, self.menu_open || !(self.ctx?.busy.isEmpty ?? true) else { return }
         self.refresh()
       }
     }
     RunLoop.main.add(timer!, forMode: .common)  // keep ticking while the menu is open
   }
 
-  func menuWillOpen(_ menu: NSMenu) { refresh() }
+  func menuWillOpen(_ menu: NSMenu) {
+    menu_open = true
+    refresh()
+  }
+
+  func menuDidClose(_ menu: NSMenu) { menu_open = false }
 
   /// Fetches the VM list in the background and rebuilds the menu if anything changed.
   private func refresh() {

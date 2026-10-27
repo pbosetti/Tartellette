@@ -99,7 +99,8 @@ final class MenuBuilder {
     if let symbol = action.symbol {
       it.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
     }
-    it.isEnabled = action.isEnabled(vm)
+    it.isEnabled = action.isEnabled(vm, ctx)
+    it.toolTip = action.toolTip
     // While a long running action is in progress, block the others and mark the active one.
     if let busy = ctx.busy[vm.name], action.isDone != nil {
       it.isEnabled = false

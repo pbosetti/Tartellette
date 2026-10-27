@@ -37,9 +37,12 @@ final class AppContext {
     }
   }
 
-  func begin(_ action: VMAction, on vm: VM) {
+  func begin(_ action: VMAction, on vm: VM) { begin(action, on: vm.name) }
+
+  func begin(_ action: VMAction, on name: String) {
     guard let isDone = action.isDone else { return }
-    busy[vm.name] = Busy(action: action.title, isDone: isDone)
+    busy[name] = Busy(action: action.title, isDone: isDone)
+    redraw()
   }
 
   func end(_ vm: String) {
@@ -72,7 +75,9 @@ struct VMAction {
   /// SF Symbol shown beside the title.
   var symbol: String? = nil
   var isVisible: (VM) -> Bool = { _ in true }
-  var isEnabled: (VM) -> Bool = { _ in true }
+  var isEnabled: @MainActor (VM, AppContext) -> Bool = { _, _ in true }
+  /// Shown on hover, e.g. to explain why the entry is disabled.
+  var toolTip: String? = nil
   /// For long running actions: the VM shows a spinner until this holds.
   var isDone: ((VM) -> Bool)? = nil
   /// Unused for `.submenu` actions.

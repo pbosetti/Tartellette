@@ -73,6 +73,10 @@ final class TartClient {
   func stop(_ name: String) async throws { _ = try await run(["stop", name]) }
   func suspend(_ name: String) async throws { _ = try await run(["suspend", name]) }
   func delete(_ name: String) async throws { _ = try await run(["delete", name]) }
+  /// `tart set` with the given options, e.g. ["--cpu", "4"].
+  func set(_ name: String, _ options: [String]) async throws {
+    _ = try await run(["set", name] + options)
+  }
   func rename(_ name: String, to new_name: String) async throws {
     _ = try await run(["rename", name, new_name])
   }

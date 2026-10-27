@@ -50,6 +50,13 @@ final class MenuBuilder {
     }
 
     menu.addItem(.separator())
+    let ctx = self.ctx
+    let autostart = item("Autostart on Login") {
+      LoginItem.toggle()
+      ctx.redraw()
+    }
+    autostart.state = LoginItem.enabled ? .on : .off
+    menu.addItem(autostart)
     menu.addItem(item("Quit Tartellette", key: "q") { NSApp.terminate(nil) })
   }
 

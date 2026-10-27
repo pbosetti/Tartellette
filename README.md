@@ -2,6 +2,17 @@
 
 A minimal macOS menu bar front-end for [Tart](https://tart.run) virtual machines.
 
+## Requirements
+
+You need an installed `tart` binary in your `$PATH`. Tartellette uses it to list, start, stop, and configure VMs:
+
+```sh
+brew install openai/tools/tart
+tart clone ghcr.io/cirruslabs/macos-tahoe-base:latest tahoe
+```
+
+This will create a local VM named `tahoe` from the OCI image. You can then start it with `tart run tahoe`, or use Tartellette to manage it from the menu bar.
+
 ## Features
 
 The menu lists the local VMs reported by `tart list` (green = running, orange = suspended, grey = stopped).
@@ -9,6 +20,9 @@ OCI images from tart's cache are in a separate **OCI Images** section, because t
 
 - **Clone**: creates a local VM from the image with `tart clone`. The VM is named after the image, e.g. `ghcr.io/cirruslabs/macos-golden-gate-xcode:latest` → `golden-gate-xcode`. If that name is taken, `-2`, `-3` and so on is added.
 - **Delete…**: removes the image from tart's cache after confirmation. VMs already cloned from it are not affected.
+
+**Autostart on Login** (off by default, just above Quit) registers Tartellette as a login item.
+You can also change it in System Settings › General › Login Items. It only works from the built `.app`, not from `swift run`.
 
 Each local VM has a submenu with:
 

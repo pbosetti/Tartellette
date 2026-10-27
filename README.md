@@ -77,3 +77,11 @@ For development, `swift run` also works.
 
 Global commands (e.g. "New VM…", "Registry Login…") can go into `MenuBuilder.populate` above the Quit item.
 They can also go into a similar `GlobalActions` registry once more of them exist.
+
+# Author
+
+Paolo Bosetti, 2026
+
+# License
+
+Licensed under the [Apache License 2.0](LICENSE).

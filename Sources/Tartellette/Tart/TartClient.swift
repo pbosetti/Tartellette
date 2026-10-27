@@ -10,10 +10,12 @@ struct TartError: LocalizedError {
 @MainActor
 final class TartClient {
   private let executable: URL
-  /// VMs currently restoring from a suspend snapshot. Running any other tart command
-  /// (even `tart list`) during a restore makes it fail with VZErrorDomain Code=1,
-  /// so `run` holds every command until this is empty.
-  private var restoring: Set<String> = []
+  /// VMs whose `tart run` is still bringing the VM up. Running any other tart command
+  /// (even `tart list`) while a VM boots or restores from a snapshot makes it fail with
+  /// VZErrorDomain Code=1, so `run` holds every command until this is empty.
+  private var starting: Set<String> = []
+  /// Cold boots log nothing when the VM is up; polling from 3 s on proved safe.
+  private let boot_hold: TimeInterval = 5
 
   init() throws {
     guard let url = TartClient.locate() else {
@@ -77,15 +79,16 @@ final class TartClient {
 
   /// `tart run` is long lived: launch it detached and only report an early failure.
   /// Output goes to ~/Library/Logs/Tartellette/<vm>.log.
-  /// Pass `resuming` when the VM is suspended, so other commands wait for the restore.
-  func start(_ name: String, gui: Bool, resuming: Bool, onEarlyFailure: @escaping @MainActor (String) -> Void) throws {
+  /// Other commands are held until the VM is up: `resuming` (VM is suspended) waits for the
+  /// restore to finish, a cold boot waits `boot_hold` seconds.
+  func start(_ name: String, config: VMConfig, resuming: Bool, onEarlyFailure: @escaping @MainActor (String) -> Void) throws {
     let log_url = try logURL(for: name)
     FileManager.default.createFile(atPath: log_url.path, contents: nil)
     let log = try FileHandle(forWritingTo: log_url)
 
     let p = Process()
     p.executableURL = executable
-    p.arguments = ["run"] + (gui ? [] : ["--no-graphics"]) + [name]
+    p.arguments = ["run"] + config.run_arguments + [name]
     p.standardOutput = log
     p.standardError = log
     p.standardInput = FileHandle.nullDevice
@@ -98,17 +101,22 @@ final class TartClient {
       Task { @MainActor in onEarlyFailure(msg.isEmpty ? "tart run exited with status \(proc.terminationStatus)" : msg) }
     }
     try p.run()
-    if resuming { await_restore(of: name, process: p, log: log_url) }
+    hold_until_up(name, process: p, log: log_url, resuming: resuming)
   }
 
-  private func await_restore(of name: String, process: Process, log: URL) {
-    restoring.insert(name)
+  private func hold_until_up(_ name: String, process: Process, log: URL, resuming: Bool) {
+    starting.insert(name)
+    let since = Date()
     Task {
-      defer { restoring.remove(name) }
-      for _ in 0..<240 {  // 60 s cap
+      defer { starting.remove(name) }
+      while Date().timeIntervalSince(since) < 60 {
         try? await Task.sleep(nanoseconds: 250_000_000)
         guard process.isRunning else { return }
-        if let text = try? String(contentsOf: log, encoding: .utf8), text.contains("resuming VM") { return }
+        if resuming {
+          if let text = try? String(contentsOf: log, encoding: .utf8), text.contains("resuming VM") { return }
+        } else if Date().timeIntervalSince(since) >= boot_hold {
+          return
+        }
       }
     }
   }
@@ -125,7 +133,7 @@ final class TartClient {
 
   /// Runs tart to completion and returns trimmed stdout. Throws with stderr on non-zero exit.
   func run(_ args: [String]) async throws -> String {
-    while !restoring.isEmpty { try await Task.sleep(nanoseconds: 250_000_000) }
+    while !starting.isEmpty { try await Task.sleep(nanoseconds: 250_000_000) }
     let exe = executable
     return try await withCheckedThrowingContinuation { cont in
       DispatchQueue.global(qos: .userInitiated).async {

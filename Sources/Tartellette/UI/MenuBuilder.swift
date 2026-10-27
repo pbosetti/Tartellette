@@ -63,26 +63,43 @@ final class MenuBuilder {
       item.toolTip = vm.state
     }
 
+    item.submenu = submenu(VMActions.groups, vm: vm)
+    return item
+  }
+
+  private func submenu(_ groups: [[VMAction]], vm: VM) -> NSMenu {
     let sub = NSMenu()
     sub.autoenablesItems = false
-    for group in VMActions.groups {
+    for group in groups {
       let items = group.filter { $0.isVisible(vm) }.map { action_item($0, vm: vm) }
       guard !items.isEmpty else { continue }
       if sub.items.count > 0 { sub.addItem(.separator()) }
       items.forEach(sub.addItem)
     }
-    item.submenu = sub
-    return item
+    return sub
   }
 
   private func action_item(_ action: VMAction, vm: VM) -> NSMenuItem {
     let ctx = self.ctx
-    let it = item(action.title) {
-      ctx.begin(action, on: vm)
-      action.perform(vm, ctx)
-      ctx.redraw()
+    let it: NSMenuItem
+    switch action.kind {
+    case .submenu(let children):
+      it = NSMenuItem(title: action.title, action: nil, keyEquivalent: "")
+      it.submenu = submenu(children(vm, ctx), vm: vm)
+    case .toggle(let is_on):
+      it = item(action.title) { action.perform(vm, ctx); ctx.redraw() }
+      it.state = is_on(vm, ctx) ? .on : .off
+    case .command:
+      it = item(action.title) {
+        ctx.begin(action, on: vm)
+        action.perform(vm, ctx)
+        ctx.redraw()
+      }
     }
-    if case .toggle(let is_on) = action.kind { it.state = is_on(vm, ctx) ? .on : .off }
+    if let symbol = action.symbol {
+      it.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)
+    }
+    it.isEnabled = action.isEnabled(vm)
     // While a long running action is in progress, block the others and mark the active one.
     if let busy = ctx.busy[vm.name], action.isDone != nil {
       it.isEnabled = false

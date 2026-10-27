@@ -63,12 +63,18 @@ struct VMAction {
   enum Kind {
     case command
     case toggle(isOn: @MainActor (VM, AppContext) -> Bool)
+    /// A nested menu whose entries (groups separated by dividers) are computed when the menu is built.
+    case submenu(children: @MainActor (VM, AppContext) -> [[VMAction]])
   }
 
   let title: String
   var kind: Kind = .command
+  /// SF Symbol shown beside the title.
+  var symbol: String? = nil
   var isVisible: (VM) -> Bool = { _ in true }
+  var isEnabled: (VM) -> Bool = { _ in true }
   /// For long running actions: the VM shows a spinner until this holds.
   var isDone: ((VM) -> Bool)? = nil
+  /// Unused for `.submenu` actions.
   let perform: @MainActor (VM, AppContext) -> Void
 }

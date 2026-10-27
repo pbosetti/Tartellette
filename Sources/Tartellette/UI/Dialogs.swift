@@ -39,6 +39,41 @@ enum Dialogs {
     return field.stringValue.trimmingCharacters(in: .whitespaces)
   }
 
+  /// Several labelled text fields. Returns the trimmed values in order, or nil if cancelled.
+  static func form(title: String, message: String, fields: [(String, String)]) -> [String]? {
+    NSApp.activate(ignoringOtherApps: true)
+    let a = NSAlert()
+    a.messageText = title
+    a.informativeText = message
+    let inputs = fields.map { _, value in
+      let f = NSTextField(string: value)
+      f.widthAnchor.constraint(equalToConstant: 240).isActive = true
+      return f
+    }
+    let grid = NSGridView(views: zip(fields, inputs).map { [NSTextField(labelWithString: $0.0 + ":"), $1] })
+    grid.column(at: 0).xPlacement = .trailing
+    grid.rowAlignment = .firstBaseline
+    grid.frame.size = grid.fittingSize
+    a.accessoryView = grid
+    a.addButton(withTitle: "OK")
+    a.addButton(withTitle: "Cancel")
+    a.window.initialFirstResponder = inputs.first
+    guard a.runModal() == .alertFirstButtonReturn else { return nil }
+    return inputs.map { $0.stringValue.trimmingCharacters(in: .whitespaces) }
+  }
+
+  static func choose_folders(title: String) -> [URL] {
+    NSApp.activate(ignoringOtherApps: true)
+    let panel = NSOpenPanel()
+    panel.message = title
+    panel.prompt = "Share"
+    panel.canChooseDirectories = true
+    panel.canChooseFiles = false
+    panel.allowsMultipleSelection = true
+    panel.canCreateDirectories = true
+    return panel.runModal() == .OK ? panel.urls : []
+  }
+
   /// Shows (label, value) rows as a two-column table. Values are selectable for copying.
   static func info(title: String, rows: [(String, String)]) {
     NSApp.activate(ignoringOtherApps: true)

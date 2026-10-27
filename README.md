@@ -10,6 +10,9 @@ Each VM has a submenu with:
 
 - **Start / Stop / Suspend**: Start runs `tart run` detached and logs to `~/Library/Logs/Tartellette/<vm>.log`.
 - **Show GUI on Start**: a per-VM toggle. When off, the VM starts with `--no-graphics`.
+- **Shared Folders**: the host folders passed to `tart run --dir`. You can add, remove, make read-only, and set the guest name or mount tag.
+  Editing is only possible while the VM is stopped, because changing shares on a suspended VM would break its snapshot.
+  A missing folder is marked with ⚠, and Start refuses to run until it is restored or removed.
 - **Copy IP Address**: copies the output of `tart ip` to the clipboard.
 - **Open Shell in Terminal**: opens an `ssh <user>@<ip>` session in the default handler for `.command` files.
   The user defaults to `admin`; change it with `defaults write com.tartellette.app sshUser <name>`.
@@ -31,6 +34,8 @@ For development, `swift run` also works.
 |------|------|
 | `Tart/TartClient.swift` | Wraps the `tart` CLI. Add new subcommands (create, clone, pull, login…) here. |
 | `Tart/VM.swift` | Model decoded from `tart list --format json`. |
+| `Tart/VMConfig.swift` | Per-VM run options (GUI, shared folders) and how they map to `tart run` arguments. Add new run options here. |
+| `Actions/SharedFolderActions.swift` | The Shared Folders submenu. It shows how to build nested, data-driven menus with the `.submenu` kind. |
 | `Actions/VMAction.swift` | Action descriptor and `AppContext`. A descriptor has a kind (`command` or `toggle`), a visibility predicate, and an optional `isDone` predicate. With `isDone` set, the VM shows a spinner until the predicate holds. |
 | `Actions/VMActions.swift` | The per-VM action registry. Append a `VMAction` to a group to add a menu entry. |
 | `UI/MenuBuilder.swift` | Generates the menu from the VM list and the action registry. |

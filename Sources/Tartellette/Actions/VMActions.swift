@@ -3,7 +3,8 @@ import AppKit
 /// The per-VM menu, as groups separated by dividers.
 enum VMActions {
   static let groups: [[VMAction]] = [
-    [start, stop, suspend, gui_toggle],
+    [start, stop, suspend],
+    [gui_toggle, SharedFolderActions.menu],
     [copy_ip, copy_ssh, open_shell, info],
     [rename, delete],
   ]
@@ -13,8 +14,17 @@ enum VMActions {
     isVisible: { !$0.running },
     isDone: { $0.running }
   ) { vm, ctx in
+    let config = ctx.settings.config(for: vm.name)
+    let missing = config.dirs.filter { !$0.exists }
+    guard missing.isEmpty else {
+      ctx.end(vm.name)
+      Dialogs.error("Cannot start “\(vm.name)”: these shared folders are missing:\n\n"
+        + missing.map { "• \($0.display_path)" }.joined(separator: "\n")
+        + "\n\nRestore them or remove them from Shared Folders.")
+      return
+    }
     do {
-      try ctx.tart.start(vm.name, gui: ctx.settings.gui_enabled(for: vm.name), resuming: vm.state == "suspended") {
+      try ctx.tart.start(vm.name, config: config, resuming: vm.state == "suspended") {
         ctx.end(vm.name)
         Dialogs.error("Could not start “\(vm.name)”:\n\n\($0)")
         ctx.refresh()
@@ -40,9 +50,9 @@ enum VMActions {
 
   static let gui_toggle = VMAction(
     title: "Show GUI on Start",
-    kind: .toggle(isOn: { vm, ctx in ctx.settings.gui_enabled(for: vm.name) })
+    kind: .toggle(isOn: { vm, ctx in ctx.settings.config(for: vm.name).gui })
   ) { vm, ctx in
-    ctx.settings.set_gui_enabled(!ctx.settings.gui_enabled(for: vm.name), for: vm.name)
+    ctx.settings.update_config(for: vm.name) { $0.gui.toggle() }
   }
 
   static let copy_ip = VMAction(
@@ -104,6 +114,9 @@ enum VMActions {
       message: "The VM and its disk will be permanently removed. This cannot be undone.",
       button: "Delete", destructive: true)
     else { return }
-    ctx.perform { try await ctx.tart.delete(vm.name) }
+    ctx.perform {
+      try await ctx.tart.delete(vm.name)
+      ctx.settings.remove_settings(for: vm.name)
+    }
   }
 }

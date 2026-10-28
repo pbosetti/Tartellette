@@ -6,12 +6,14 @@ enum VMActions {
     [start, resume, stop, suspend],
     [gui_toggle, suspendable_toggle, HardwareActions.menu, SharedFolderActions.menu],
     [copy_ip, copy_ssh, open_shell, info],
-    [rename, delete, clone],
+    [rename, delete, clone, lock_toggle],
   ]
 
   static let start = VMAction(
     title: "Start",
     isVisible: { $0.state == "stopped" },
+    isEnabled: { vm, ctx in !ctx.settings.config(for: vm.name).locked },
+    toolTip: "Locked VMs can only be cloned",
     isDone: { $0.running },
     perform: start_or_resume)
 
@@ -197,6 +199,16 @@ enum VMActions {
       guard !taken.contains(new_name) else { return Dialogs.error("A VM named “\(new_name)” already exists.") }
       try await ctx.tart.clone(vm.name, to: new_name)
       ctx.settings.copy_settings(from: vm.name, to: new_name)
+      ctx.settings.update_config(for: new_name) { $0.locked = false }  // a template's clones are usable
     }
+  }
+
+  static let lock_toggle = VMAction(
+    title: "Lock",
+    kind: .toggle(isOn: { vm, ctx in ctx.settings.config(for: vm.name).locked }),
+    isEnabled: { vm, _ in vm.state == "stopped" },
+    toolTip: "A locked VM cannot be started and serves as a template for Clone"
+  ) { vm, ctx in
+    ctx.settings.update_config(for: vm.name) { $0.locked.toggle() }
   }
 }

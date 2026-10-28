@@ -48,6 +48,8 @@ Each local VM has a submenu with:
 - **Rename… / Delete…**: only shown when the VM is not running. Delete asks for confirmation first.
 - **Clone…**: enabled only while the VM is stopped. It copies the VM with `tart clone`, suggesting `<vm>-1` (or the next free number) as the name.
   The clone also gets Tartellette's settings for the original (GUI, Allow Suspend, shared folders).
+- **Lock**: turns a stopped VM into a template. A locked VM shows a lock icon instead of the status dot, and Start is disabled: it can only be cloned. Clones are not locked.
+  The toggle is disabled while the VM is running or suspended. The lock only applies within Tartellette; `tart run` from a terminal ignores it.
 
 ## Build
 

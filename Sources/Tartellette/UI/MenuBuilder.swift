@@ -67,8 +67,16 @@ final class MenuBuilder {
       spin(item)
       item.toolTip = "\(busy.action)…"
     } else {
-      item.image = vm.is_local ? status_dot(for: vm) : NSImage(systemSymbolName: "shippingbox", accessibilityDescription: "OCI image")
-      item.toolTip = vm.is_local ? vm.state : vm.name
+      if !vm.is_local {
+        item.image = NSImage(systemSymbolName: "shippingbox", accessibilityDescription: "OCI image")
+        item.toolTip = vm.name
+      } else if ctx.settings.config(for: vm.name).locked {
+        item.image = NSImage(systemSymbolName: "lock.fill", accessibilityDescription: "locked")
+        item.toolTip = "locked template"
+      } else {
+        item.image = status_dot(for: vm)
+        item.toolTip = vm.state
+      }
     }
 
     item.submenu = submenu(actions, vm: vm)

@@ -34,6 +34,8 @@ struct VMConfig: Codable, Equatable {
   /// always restores with the suspendable device set.
   var suspendable = true
   var dirs: [SharedDir] = []
+  /// A locked VM is a template: it cannot be started, only cloned.
+  var locked = false
 
   var run_arguments: [String] {
     (gui ? [] : ["--no-graphics"]) + (suspendable ? ["--suspendable"] : []) + dirs.map { "--dir=\($0.argument)" }
@@ -47,5 +49,6 @@ struct VMConfig: Codable, Equatable {
     gui = try c.decodeIfPresent(Bool.self, forKey: .gui) ?? true
     suspendable = try c.decodeIfPresent(Bool.self, forKey: .suspendable) ?? true
     dirs = try c.decodeIfPresent([SharedDir].self, forKey: .dirs) ?? []
+    locked = try c.decodeIfPresent(Bool.self, forKey: .locked) ?? false
   }
 }
